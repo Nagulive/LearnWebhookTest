@@ -1,0 +1,65 @@
+@page "/payment"
+@inject CartService CartService
+@inject OrderService OrderService
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Payment</PageTitle>
+
+<div class="payment-container">
+    <div class="payment-card">
+        <h2>Secure Payment</h2>
+        <div class="amount-display">
+            Total to Pay: <span>$@CartService.GetTotal()</span>
+        </div>
+
+        <div class="payment-form">
+            <div class="form-group">
+                <label>Card Number</label>
+                <input type="text" placeholder="0000 0000 0000 0000" />
+            </div>
+            <div class="row">
+                <div class="form-group half">
+                    <label>Expiry</label>
+                    <input type="text" placeholder="MM/YY" />
+                </div>
+                <div class="form-group half">
+                    <label>CVV</label>
+                    <input type="text" placeholder="123" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Cardholder Name</label>
+                <input type="text" placeholder="John Doe" />
+            </div>
+            
+            <button class="btn-pay" @onclick="ProcessPayment">Pay Now</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!CartService.CartItems.Any())
+        {
+            NavigationManager.NavigateTo("/cart");
+        }
+    }
+
+    private void ProcessPayment()
+    {
+        // Simulate payment processing
+        var order = new Order
+        {
+            Items = new List<CartItem>(CartService.CartItems),
+            TotalAmount = CartService.GetTotal(),
+            ShippingAddress = UserService.CurrentUser.Address,
+            Status = "Paid"
+        };
+        
+        OrderService.PlaceOrder(order);
+        CartService.ClearCart();
+        NavigationManager.NavigateTo("/my-orders");
+    }
+}

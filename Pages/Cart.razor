@@ -1,0 +1,78 @@
+@page "/cart"
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>Shopping Cart</PageTitle>
+
+<div class="cart-container">
+    <h2>Your Shopping Cart</h2>
+
+    @if (!CartService.CartItems.Any())
+    {
+        <div class="empty-cart">
+            <p>Your cart is empty.</p>
+            <a href="/" class="btn-continue">Continue Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="cart-items">
+            @foreach (var item in CartService.CartItems)
+            {
+                <div class="cart-item">
+                    <div class="item-image" style="background-image: url('@item.Product.ImageUrl')"></div>
+                    <div class="item-details">
+                        <h3>@item.Product.Name</h3>
+                        <p class="price">$@item.Product.Price</p>
+                    </div>
+                    <div class="item-quantity">
+                        <span>Qty: @item.Quantity</span>
+                    </div>
+                    <div class="item-total">
+                        $@(item.Product.Price * item.Quantity)
+                    </div>
+                    <button class="btn-remove" @onclick="() => Remove(item.Product)">Remove</button>
+                </div>
+            }
+        </div>
+
+        <div class="cart-summary">
+            <div class="total">
+                <span>Total:</span>
+                <span class="total-amount">$@CartService.GetTotal()</span>
+            </div>
+            <div class="actions">
+                <button class="btn-clear" @onclick="ClearCart">Clear Cart</button>
+                <button class="btn-checkout" @onclick="GoToCheckout">Proceed to Checkout</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        CartService.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= StateHasChanged;
+    }
+
+    private void Remove(Product product)
+    {
+        CartService.RemoveFromCart(product);
+    }
+
+    private void ClearCart()
+    {
+        CartService.ClearCart();
+    }
+
+    private void GoToCheckout()
+    {
+        NavigationManager.NavigateTo("/checkout");
+    }
+}

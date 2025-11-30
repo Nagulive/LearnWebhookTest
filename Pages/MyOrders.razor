@@ -1,0 +1,52 @@
+@page "/my-orders"
+@inject OrderService OrderService
+
+<PageTitle>My Orders</PageTitle>
+
+<div class="orders-container">
+    <h2>My Orders</h2>
+
+    @if (!Orders.Any())
+    {
+        <div class="no-orders">
+            <p>You haven't placed any orders yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="orders-list">
+            @foreach (var order in Orders)
+            {
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-id">Order #@order.Id</span>
+                        <span class="order-date">@order.OrderDate.ToShortDateString()</span>
+                        <span class="order-status @order.Status.ToLower()">@order.Status</span>
+                    </div>
+                    <div class="order-items">
+                        @foreach (var item in order.Items)
+                        {
+                            <div class="order-item">
+                                <span>@item.Product.Name x @item.Quantity</span>
+                                <span>$@(item.Product.Price * item.Quantity)</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="order-footer">
+                        <span class="total-label">Total Amount:</span>
+                        <span class="total-value">$@order.TotalAmount</span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Order> Orders = new();
+
+    protected override void OnInitialized()
+    {
+        Orders = OrderService.GetOrders();
+    }
+}

@@ -1,0 +1,98 @@
+.orders-container[b-vgzwvrj8ub] {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+h2[b-vgzwvrj8ub] {
+    margin-bottom: 2rem;
+    color: #2c3e50;
+}
+
+.no-orders[b-vgzwvrj8ub] {
+    text-align: center;
+    padding: 3rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    color: #7f8c8d;
+}
+
+.orders-list[b-vgzwvrj8ub] {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.order-card[b-vgzwvrj8ub] {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.order-header[b-vgzwvrj8ub] {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.order-id[b-vgzwvrj8ub] {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.order-date[b-vgzwvrj8ub] {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.order-status[b-vgzwvrj8ub] {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.order-status.paid[b-vgzwvrj8ub] {
+    background: #e8f8f5;
+    color: #27ae60;
+}
+
+.order-status.pending[b-vgzwvrj8ub] {
+    background: #fef9e7;
+    color: #f1c40f;
+}
+
+.order-items[b-vgzwvrj8ub] {
+    padding: 1.5rem;
+}
+
+.order-item[b-vgzwvrj8ub] {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.order-footer[b-vgzwvrj8ub] {
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+}
+
+.total-label[b-vgzwvrj8ub] {
+    color: #7f8c8d;
+}
+
+.total-value[b-vgzwvrj8ub] {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #2c3e50;
+}

@@ -1,0 +1,45 @@
+﻿@page "/"
+@inject ProductService ProductService
+@inject CartService CartService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Shop Premium</PageTitle>
+
+<div class="hero-section">
+    <h1>Discover Premium Quality</h1>
+    <p>Curated items for your lifestyle.</p>
+</div>
+
+<div class="products-container">
+    @foreach (var product in Products)
+    {
+        <div class="product-card">
+            <div class="product-image" style="background-image: url('@product.ImageUrl')"></div>
+            <div class="product-details">
+                <h3>@product.Name</h3>
+                <p class="category">@product.Category</p>
+                <p class="description">@product.Description</p>
+                <div class="price-action">
+                    <span class="price">$@product.Price</span>
+                    <button class="btn-add" @onclick="() => AddToCart(product)">
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Product> Products = new();
+
+    protected override void OnInitialized()
+    {
+        Products = ProductService.GetProducts();
+    }
+
+    private void AddToCart(Product product)
+    {
+        CartService.AddToCart(product);
+    }
+}

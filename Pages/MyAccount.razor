@@ -1,0 +1,38 @@
+@page "/my-account"
+@inject UserService UserService
+
+<PageTitle>My Account</PageTitle>
+
+<div class="account-container">
+    <h2>My Account</h2>
+
+    <div class="account-card">
+        <div class="profile-header">
+            <div class="avatar">
+                @UserService.CurrentUser.Name.Substring(0, 1)
+            </div>
+            <h3>@UserService.CurrentUser.Name</h3>
+            <p>Member since 2023</p>
+        </div>
+
+        <div class="profile-details">
+            <div class="detail-group">
+                <label>Email</label>
+                <div class="value">@UserService.CurrentUser.Email</div>
+            </div>
+            <div class="detail-group">
+                <label>Shipping Address</label>
+                <div class="value">@UserService.CurrentUser.Address</div>
+            </div>
+        </div>
+        
+        <div class="account-actions">
+            <button class="btn-edit">Edit Profile</button>
+            <button class="btn-logout">Logout</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+}

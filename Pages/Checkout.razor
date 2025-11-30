@@ -1,0 +1,62 @@
+@page "/checkout"
+@inject CartService CartService
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Checkout</PageTitle>
+
+<div class="checkout-container">
+    <h2>Checkout</h2>
+    
+    <div class="checkout-grid">
+        <div class="shipping-info">
+            <h3>Shipping Information</h3>
+            <form>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" value="@UserService.CurrentUser.Name" readonly />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" value="@UserService.CurrentUser.Email" readonly />
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea readonly>@UserService.CurrentUser.Address</textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            @foreach (var item in CartService.CartItems)
+            {
+                <div class="summary-item">
+                    <span>@item.Product.Name x @item.Quantity</span>
+                    <span>$@(item.Product.Price * item.Quantity)</span>
+                </div>
+            }
+            <div class="summary-total">
+                <span>Total</span>
+                <span>$@CartService.GetTotal()</span>
+            </div>
+            
+            <button class="btn-payment" @onclick="GoToPayment">Proceed to Payment</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!CartService.CartItems.Any())
+        {
+            NavigationManager.NavigateTo("/cart");
+        }
+    }
+
+    private void GoToPayment()
+    {
+        NavigationManager.NavigateTo("/payment");
+    }
+}
