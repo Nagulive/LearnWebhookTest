@@ -20,6 +20,7 @@ services:
     environment:
       - ConnectionStrings__DefaultConnection=Host=db;Database=hallbookingdb;Username=postgres;Password=Password123!
       - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=super-secret-key-that-is-at-least-32-bytes-long-for-local-dev
     ports:
       - "5000:8080"
     depends_on:

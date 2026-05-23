@@ -24,7 +24,12 @@ builder.Services.AddScoped<INotificationService, MockNotificationService>();
 // builder.Services.AddScoped<IPaymentService, RazorpayPaymentService>(); // To be implemented with real keys
 
 // JWT Authentication Configuration
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "super-secret-key-that-is-at-least-32-bytes-long";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrEmpty(jwtKey))
+{
+    throw new InvalidOperationException("JWT Key must be configured in environment variables or appsettings.");
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -53,12 +58,20 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure DB is created for testing purposes (Not for production)
+// Ensure DB is created and migrations applied
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // In a real scenario, use context.Database.Migrate();
-    // context.Database.EnsureCreated(); // Will fail without actual DB running right now.
+    try
+    {
+        // Automatically apply migrations on startup (suitable for development and this skeleton)
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
 }
 
 app.Run();

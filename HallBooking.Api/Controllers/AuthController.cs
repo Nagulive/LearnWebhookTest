@@ -33,8 +33,7 @@ public class AuthController : ControllerBase
         {
             Name = dto.Name,
             Email = dto.Email,
-            // In a real app, you would hash the password using BCrypt or similar here
-            PasswordHash = dto.Password,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             PhoneNumber = dto.PhoneNumber,
             Role = dto.Role
         };
@@ -58,7 +57,7 @@ public class AuthController : ControllerBase
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-        if (user == null || user.PasswordHash != dto.Password)
+        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             return Unauthorized("Invalid credentials.");
 
         var token = GenerateJwtToken(user);
@@ -74,7 +73,10 @@ public class AuthController : ControllerBase
 
     private string GenerateJwtToken(User user)
     {
-        var key = _configuration["Jwt:Key"] ?? "super-secret-key-that-is-at-least-32-bytes-long";
+        var key = _configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(key))
+            throw new InvalidOperationException("JWT Key is not configured.");
+
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
