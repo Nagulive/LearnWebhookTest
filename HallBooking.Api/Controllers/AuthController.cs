@@ -1,4 +1,12 @@
+using HallBooking.Application.DTOs;
+using HallBooking.Application.Interfaces;
+using HallBooking.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace HallBooking.Api.Controllers;
 
@@ -6,18 +14,83 @@ namespace HallBooking.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    // Minimal mock for demonstration
-    // In reality, this would inject a service that handles password hashing & JWT generation
+    private readonly IApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
 
-    [HttpPost("login")]
-    public IActionResult Login()
+    public AuthController(IApplicationDbContext context, IConfiguration configuration)
     {
-        return Ok(new { Token = "mock-jwt-token-replace-with-real-implementation" });
+        _context = context;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
-    public IActionResult Register()
+    public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
-        return Ok(new { Message = "User registered successfully" });
+        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            return BadRequest("Email already in use.");
+
+        var user = new User
+        {
+            Name = dto.Name,
+            Email = dto.Email,
+            // In a real app, you would hash the password using BCrypt or similar here
+            PasswordHash = dto.Password,
+            PhoneNumber = dto.PhoneNumber,
+            Role = dto.Role
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync(default);
+
+        var token = GenerateJwtToken(user);
+
+        return Ok(new AuthResponseDto
+        {
+            Token = token,
+            Email = user.Email,
+            Name = user.Name,
+            Role = user.Role
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+        if (user == null || user.PasswordHash != dto.Password)
+            return Unauthorized("Invalid credentials.");
+
+        var token = GenerateJwtToken(user);
+
+        return Ok(new AuthResponseDto
+        {
+            Token = token,
+            Email = user.Email,
+            Name = user.Name,
+            Role = user.Role
+        });
+    }
+
+    private string GenerateJwtToken(User user)
+    {
+        var key = _configuration["Jwt:Key"] ?? "super-secret-key-that-is-at-least-32-bytes-long";
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            claims: claims,
+            expires: DateTime.Now.AddDays(7),
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
