@@ -51,7 +51,10 @@ export default function Home() {
                 <p className="text-sm text-gray-500 mb-2">{hall.city}, {hall.state} • By {hall.ownerName}</p>
                 <p className="mb-4">{hall.description}</p>
                 <p className="font-semibold text-lg mb-4">₹{hall.pricePerDay} / day</p>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+                <button
+                  aria-label={`Book ${hall.name}`}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
                   Book Now
                 </button>
               </div>

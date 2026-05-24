@@ -44,7 +44,8 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => approveHall(hall.id)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                aria-label={`Approve ${hall.name}`}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                 Approve
               </button>
             </div>
