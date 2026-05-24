@@ -22,8 +22,12 @@ export default function AdminDashboard() {
   }, []);
 
   const approveHall = async (id: string) => {
-    await apiClient.put(`/Halls/${id}/approve`);
-    fetchHalls();
+    try {
+      await apiClient.put(`/Halls/${id}/approve`);
+      fetchHalls();
+    } catch {
+      alert("Failed to approve hall");
+    }
   };
 
   return (
