@@ -108,3 +108,4 @@ obj/
 **/obj/
 **/bin/
 **/obj/
+.env
