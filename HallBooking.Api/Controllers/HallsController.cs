@@ -125,6 +125,56 @@ public class HallsController : ControllerBase
         return Ok(halls);
     }
 
+    [Authorize(Roles = "HallOwner")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateHall(Guid id, CreateHallDto dto)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || !Guid.TryParse(userIdString, out Guid ownerId))
+            return Unauthorized();
+
+        var hall = await _context.Halls.FindAsync(id);
+        if (hall == null) return NotFound();
+
+        // Resource Authorization: Only the owner can update their hall
+        if (hall.OwnerId != ownerId) return Forbid();
+
+        hall.Name = dto.Name;
+        hall.Description = dto.Description;
+        hall.Capacity = dto.Capacity;
+        hall.PricePerDay = dto.PricePerDay;
+        hall.State = dto.State;
+        hall.City = dto.City;
+        hall.FullAddress = dto.FullAddress;
+        hall.IsApprovedByAdmin = false; // Require re-approval after edits
+
+        await _context.SaveChangesAsync(default);
+
+        return NoContent();
+    }
+
+    [Authorize(Roles = "HallOwner,Admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteHall(Guid id)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || !Guid.TryParse(userIdString, out Guid userId))
+            return Unauthorized();
+
+        var role = User.FindFirstValue(ClaimTypes.Role);
+
+        var hall = await _context.Halls.FindAsync(id);
+        if (hall == null) return NotFound();
+
+        // Only the owner or an admin can delete a hall
+        if (role != "Admin" && hall.OwnerId != userId) return Forbid();
+
+        _context.Halls.Remove(hall);
+        await _context.SaveChangesAsync(default);
+
+        return NoContent();
+    }
+
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}/approve")]
     public async Task<IActionResult> ApproveHall(Guid id)

@@ -76,6 +76,41 @@ Develop a cross-platform mobile application utilizing the existing .NET Web API.
 
 Prepare the application for a live cloud environment.
 
+---
+
+## Parallel Execution & Git Branching Strategy
+
+To deliver this platform rapidly, we will utilize a parallelized feature-branch workflow. Multiple developers (or AI agents) can work on these epics simultaneously by adhering to the following branching strategy:
+
+### Branching Model
+*   **`main` branch:** The stable, production-ready codebase.
+*   **`develop` branch:** The integration branch where features are combined and tested before pushing to `main`.
+*   **`feature/*` branches:** Temporary branches dedicated to specific tasks (e.g., `feature/epic-1-security`, `feature/epic-3-customer-portal`).
+
+### Execution Plan (Sprint 1)
+These tasks can be executed **simultaneously** right now:
+
+1.  **Branch `feature/epic-1-security`:**
+    *   *Focus:* Tasks 1.1, 1.3, and 1.4.
+    *   *Action:* Implement BCrypt (already done), build out the FluentValidation rules, and finish the Global Exception Middleware.
+2.  **Branch `feature/epic-2-integrations`:**
+    *   *Focus:* Task 2.1 and 2.2.
+    *   *Action:* Install the Stripe/Razorpay NuGet packages, build the actual `RazorpayPaymentService.cs`, and set up the Twilio SMS logic.
+3.  **Branch `feature/epic-3-frontend-customer`:**
+    *   *Focus:* Task 3.1.
+    *   *Action:* Build the React form components for the Customer booking flow in Next.js, mocking the API responses until the backend integration is complete.
+4.  **Branch `feature/epic-3-frontend-admin-owner`:**
+    *   *Focus:* Task 3.2 and 3.3.
+    *   *Action:* Build the React dashboard components for the Admin and Owner portals.
+
+### Integration Workflow
+Once a feature branch finishes its scope (e.g., Epic 1 finishes hardening the API):
+1. Create a Pull Request (PR) from the `feature/*` branch to `develop`.
+2. Run automated tests via CI/CD.
+3. Merge into `develop`.
+4. Rebase other active branches off of `develop` to ensure they integrate the newest changes.
+5. Once all Sprint 1 branches are merged and verified in `develop`, merge `develop` to `main`.
+
 *   **Task 5.1: CI/CD Pipelines:**
     *   Create GitHub Actions or Azure DevOps pipelines to automatically run `dotnet test` and deploy the API and Next.js frontend to a cloud provider (e.g., Azure App Service, Vercel).
 *   **Task 5.2: Production Database Setup:**

@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password123!
-      POSTGRES_DB: hallbookingdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -18,9 +18,9 @@ services:
       context: .
       dockerfile: HallBooking.Api/Dockerfile
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Database=hallbookingdb;Username=postgres;Password=Password123!
+      - ConnectionStrings__DefaultConnection=Host=db;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - ASPNETCORE_ENVIRONMENT=Development
-      - Jwt__Key=super-secret-key-that-is-at-least-32-bytes-long-for-local-dev
+      - Jwt__Key=${JWT_KEY}
     ports:
       - "5000:8080"
     depends_on:
