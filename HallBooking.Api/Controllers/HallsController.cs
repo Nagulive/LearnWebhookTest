@@ -50,6 +50,35 @@ public class HallsController : ControllerBase
         return Ok(halls);
     }
 
+    [Authorize(Roles = "HallOwner")]
+    [HttpGet("my-halls")]
+    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetMyHalls()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || !Guid.TryParse(userIdString, out Guid ownerId))
+            return Unauthorized();
+
+        var halls = await _context.Halls
+            .Include(h => h.Owner)
+            .Where(h => h.OwnerId == ownerId)
+            .Select(h => new HallResponseDto
+            {
+                Id = h.Id,
+                Name = h.Name,
+                Description = h.Description,
+                Capacity = h.Capacity,
+                PricePerDay = h.PricePerDay,
+                State = h.State,
+                City = h.City,
+                FullAddress = h.FullAddress,
+                OwnerId = h.OwnerId,
+                OwnerName = h.Owner.Name,
+                IsApprovedByAdmin = h.IsApprovedByAdmin
+            }).ToListAsync();
+
+        return Ok(halls);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<HallResponseDto>> GetHall(Guid id)
     {
