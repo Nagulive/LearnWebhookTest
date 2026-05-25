@@ -1,0 +1,3 @@
+## 2024-05-25 - Contextual ARIA labels for list buttons
+**Learning:** Generic button labels in lists (like "Book Now" or "Approve") provide insufficient context for screen reader users when navigating by interactive elements. The screen reader will announce "Book Now, button" multiple times without indicating *what* is being booked.
+**Action:** Always use dynamic `aria-label` attributes to inject contextual data into generic buttons within lists or grids (e.g., `aria-label={"Book " + hall.name + " now"}`). Also, explicit focus states (like `focus-visible:ring-2`) should be added to ensure keyboard navigation is visually clear.
