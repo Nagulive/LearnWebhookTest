@@ -21,6 +21,10 @@ export default function Home() {
   // Search & Booking state
   const [stateFilter, setStateFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
+  const [latFilter, setLatFilter] = useState("");
+  const [lngFilter, setLngFilter] = useState("");
+  const [radiusFilter, setRadiusFilter] = useState("10"); // Default 10km
+
   const [bookingModal, setBookingModal] = useState<Hall | null>(null);
   const [eventDate, setEventDate] = useState("");
 
@@ -29,7 +33,10 @@ export default function Home() {
     try {
       let query = "/Halls?";
       if (stateFilter) query += `state=${stateFilter}&`;
-      if (cityFilter) query += `city=${cityFilter}`;
+      if (cityFilter) query += `city=${cityFilter}&`;
+      if (latFilter && lngFilter && radiusFilter) {
+          query += `lat=${latFilter}&lng=${lngFilter}&radiusKm=${radiusFilter}`;
+      }
 
       const response = await apiClient.get(query);
       setHalls(response.data);
@@ -66,12 +73,26 @@ export default function Home() {
         <h1 className="text-4xl font-extrabold mb-4 text-gray-900">Kerala & Tamil Nadu Hall Bookings</h1>
         <p className="text-lg text-gray-600 mb-8">Discover and book the perfect venue for your next event.</p>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-3xl mx-auto mb-4">
             <input type="text" placeholder="State (e.g. Kerala, Tamil Nadu)" value={stateFilter} onChange={e => setStateFilter(e.target.value)} className="border-2 border-gray-300 p-3 rounded-lg flex-1 shadow-sm focus:border-blue-500 focus:outline-none transition" />
             <input type="text" placeholder="City" value={cityFilter} onChange={e => setCityFilter(e.target.value)} className="border-2 border-gray-300 p-3 rounded-lg flex-1 shadow-sm focus:border-blue-500 focus:outline-none transition" />
-            <button onClick={fetchHalls} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-lg shadow-md hover:bg-blue-700 transition">Search Venues</button>
+            <button onClick={fetchHalls} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-lg shadow-md hover:bg-blue-700 transition">Search Text</button>
+        </div>
+
+        <div className="text-sm font-semibold text-gray-500 mb-2">— OR SEARCH BY RADIUS —</div>
+
+        <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-3xl mx-auto mb-8">
+            <input type="number" placeholder="Lat (e.g. 10.85)" value={latFilter} onChange={e => setLatFilter(e.target.value)} className="border-2 border-gray-300 p-3 rounded-lg flex-1 shadow-sm focus:border-blue-500 focus:outline-none transition" />
+            <input type="number" placeholder="Lng (e.g. 76.27)" value={lngFilter} onChange={e => setLngFilter(e.target.value)} className="border-2 border-gray-300 p-3 rounded-lg flex-1 shadow-sm focus:border-blue-500 focus:outline-none transition" />
+            <input type="number" placeholder="Radius (km)" value={radiusFilter} onChange={e => setRadiusFilter(e.target.value)} className="border-2 border-gray-300 p-3 rounded-lg flex-1 shadow-sm focus:border-blue-500 focus:outline-none transition" />
+            <button onClick={fetchHalls} className="bg-green-600 text-white font-bold px-8 py-3 rounded-lg shadow-md hover:bg-green-700 transition">Search Map</button>
         </div>
       </header>
+
+      {/* Map View Placeholder */}
+      <div className="max-w-7xl mx-auto mb-12 h-64 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded-xl shadow-inner">
+         <p className="text-gray-500 text-lg font-medium">🗺️ Google Maps Integration Placeholder (Epic 2)</p>
+      </div>
 
       {bookingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">

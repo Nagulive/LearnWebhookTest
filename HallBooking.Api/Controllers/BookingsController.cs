@@ -16,11 +16,13 @@ public class BookingsController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
     private readonly INotificationService _notificationService;
+    private readonly IPaymentService _paymentService;
 
-    public BookingsController(IApplicationDbContext context, INotificationService notificationService)
+    public BookingsController(IApplicationDbContext context, INotificationService notificationService, IPaymentService paymentService)
     {
         _context = context;
         _notificationService = notificationService;
+        _paymentService = paymentService;
     }
 
     [Authorize(Roles = "Customer")]
@@ -48,13 +50,19 @@ public class BookingsController : ControllerBase
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync(default);
 
+        // Generate Razorpay Order
+        var orderId = await _paymentService.CreatePaymentOrderAsync(booking.TotalAmount, "INR", booking.Id.ToString());
+        booking.PaymentTransactionId = orderId;
+        await _context.SaveChangesAsync(default);
+
         // Notify Owner
-        await _notificationService.SendEmailAsync(hall.Owner.Email, "New Booking Request", $"You have a new booking request for {hall.Name} on {dto.EventDate}");
+        await _notificationService.SendSmsAsync(hall.Owner.PhoneNumber, $"New Booking ID {booking.Id} for {hall.Name} on {dto.EventDate.ToShortDateString()}");
 
         return Ok(new BookingResponseDto
         {
             Id = booking.Id,
             HallId = booking.HallId,
+            PaymentTransactionId = orderId,
             Status = booking.Status
         });
     }

@@ -20,7 +20,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetHalls([FromQuery] string? state, [FromQuery] string? city)
+    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetHalls([FromQuery] string? state, [FromQuery] string? city, [FromQuery] double? lat, [FromQuery] double? lng, [FromQuery] double? radiusKm)
     {
         var query = _context.Halls
             .Include(h => h.Owner)
@@ -32,7 +32,7 @@ public class HallsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(city))
             query = query.Where(h => h.City.ToLower() == city.ToLower());
 
-        var halls = await query.Select(h => new HallResponseDto
+        var hallsList = await query.Select(h => new HallResponseDto
         {
             Id = h.Id,
             Name = h.Name,
@@ -47,7 +47,39 @@ public class HallsController : ControllerBase
             IsApprovedByAdmin = h.IsApprovedByAdmin
         }).ToListAsync();
 
-        return Ok(halls);
+        // If coordinates are provided, perform Haversine distance filtering in-memory
+        // (For production with millions of rows, use PostGIS directly in the DB query)
+        if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+        {
+            // Note: Since Latitude/Longitude weren't explicitly selected in the DTO previously,
+            // we should technically query the original entities and map after filtering.
+            // For simplicity in this iteration, we refetch the entities that match.
+
+            var allEntities = await query.ToListAsync();
+            var filteredIds = new List<Guid>();
+
+            foreach (var hall in allEntities)
+            {
+                var R = 6371; // Radius of earth in km
+                var dLat = (hall.Latitude - lat.Value) * (Math.PI / 180);
+                var dLon = (hall.Longitude - lng.Value) * (Math.PI / 180);
+                var a =
+                    Math.Sin(dLat/2) * Math.Sin(dLat/2) +
+                    Math.Cos(lat.Value * (Math.PI / 180)) * Math.Cos(hall.Latitude * (Math.PI / 180)) *
+                    Math.Sin(dLon/2) * Math.Sin(dLon/2);
+                var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+                var distance = R * c;
+
+                if (distance <= radiusKm.Value)
+                {
+                    filteredIds.Add(hall.Id);
+                }
+            }
+
+            hallsList = hallsList.Where(h => filteredIds.Contains(h.Id)).ToList();
+        }
+
+        return Ok(hallsList);
     }
 
     [Authorize(Roles = "HallOwner")]
