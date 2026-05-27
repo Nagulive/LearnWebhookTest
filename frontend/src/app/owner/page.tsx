@@ -33,7 +33,7 @@ export default function OwnerDashboard() {
       <div className="grid grid-cols-2 gap-8">
         <div>
           <h2 className="text-2xl font-semibold mb-4">My Halls</h2>
-          <button className="bg-green-600 text-white px-4 py-2 rounded mb-4">+ Add New Hall</button>
+          <button className="bg-green-600 text-white px-4 py-2 rounded mb-4 hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:outline-none">+ Add New Hall</button>
           <ul className="space-y-4">
             {halls.map(h => (
               <li key={h.id} className="border p-4 rounded">
