@@ -12,18 +12,31 @@ interface Hall {
 
 export default function AdminDashboard() {
   const [unapprovedHalls, setUnapprovedHalls] = useState<Hall[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  const fetchHalls = () => {
-    apiClient.get("/Halls/unapproved").then(res => setUnapprovedHalls(res.data));
+  const fetchHalls = async (isInitialLoad = false) => {
+    if (isInitialLoad) setIsLoading(true);
+    try {
+      const res = await apiClient.get("/Halls/unapproved");
+      setUnapprovedHalls(res.data);
+    } finally {
+      if (isInitialLoad) setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchHalls();
+    fetchHalls(true);
   }, []);
 
   const approveHall = async (id: string) => {
-    await apiClient.put(`/Halls/${id}/approve`);
-    fetchHalls();
+    setApprovingId(id);
+    try {
+      await apiClient.put(`/Halls/${id}/approve`);
+      await fetchHalls();
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   return (
@@ -32,8 +45,12 @@ export default function AdminDashboard() {
 
       <h2 className="text-2xl font-semibold mb-4">Halls Pending Approval</h2>
 
-      {unapprovedHalls.length === 0 ? (
-        <p>No halls pending approval.</p>
+      {isLoading ? (
+        <p className="animate-pulse text-gray-500">Loading pending halls...</p>
+      ) : unapprovedHalls.length === 0 ? (
+        <div className="border-2 border-dashed border-gray-300 p-8 text-center rounded-lg">
+          <p className="text-gray-500">No halls pending approval.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {unapprovedHalls.map(hall => (
@@ -44,10 +61,14 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => approveHall(hall.id)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none"
-                aria-label={`Approve ${hall.name}`}
+                disabled={approvingId === hall.id}
+                aria-busy={approvingId === hall.id}
+                className={`text-white px-4 py-2 rounded focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  approvingId === hall.id ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                }`}
+                aria-label={approvingId === hall.id ? `Approving ${hall.name}...` : `Approve ${hall.name}`}
               >
-                Approve
+                {approvingId === hall.id ? "Approving..." : "Approve"}
               </button>
             </div>
           ))}
