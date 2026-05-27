@@ -42,6 +42,8 @@ public class HallsController : ControllerBase
             State = h.State,
             City = h.City,
             FullAddress = h.FullAddress,
+            Latitude = h.Latitude,
+            Longitude = h.Longitude,
             OwnerId = h.OwnerId,
             OwnerName = h.Owner.Name,
             IsApprovedByAdmin = h.IsApprovedByAdmin
@@ -103,6 +105,8 @@ public class HallsController : ControllerBase
                 State = h.State,
                 City = h.City,
                 FullAddress = h.FullAddress,
+                Latitude = h.Latitude,
+                Longitude = h.Longitude,
                 OwnerId = h.OwnerId,
                 OwnerName = h.Owner.Name,
                 IsApprovedByAdmin = h.IsApprovedByAdmin
@@ -130,6 +134,8 @@ public class HallsController : ControllerBase
             State = hall.State,
             City = hall.City,
             FullAddress = hall.FullAddress,
+            Latitude = hall.Latitude,
+            Longitude = hall.Longitude,
             OwnerId = hall.OwnerId,
             OwnerName = hall.Owner.Name,
             IsApprovedByAdmin = hall.IsApprovedByAdmin
@@ -153,6 +159,8 @@ public class HallsController : ControllerBase
             State = dto.State,
             City = dto.City,
             FullAddress = dto.FullAddress,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
             OwnerId = ownerId,
             IsApprovedByAdmin = false // Requires Admin approval
         };
@@ -207,6 +215,8 @@ public class HallsController : ControllerBase
         hall.State = dto.State;
         hall.City = dto.City;
         hall.FullAddress = dto.FullAddress;
+        hall.Latitude = dto.Latitude;
+        hall.Longitude = dto.Longitude;
         hall.IsApprovedByAdmin = false; // Require re-approval after edits
 
         await _context.SaveChangesAsync(default);

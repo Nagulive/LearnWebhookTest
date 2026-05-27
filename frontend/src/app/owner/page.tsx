@@ -23,7 +23,7 @@ export default function OwnerDashboard() {
 
   // Add Hall Form State
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newHall, setNewHall] = useState({ name: '', description: '', capacity: 0, pricePerDay: 0, state: '', city: '', fullAddress: '' });
+  const [newHall, setNewHall] = useState({ name: '', description: '', capacity: 0, pricePerDay: 0, state: '', city: '', fullAddress: '', latitude: 0, longitude: 0 });
   const [error, setError] = useState("");
 
   const fetchData = async () => {
@@ -48,7 +48,7 @@ export default function OwnerDashboard() {
       await apiClient.post("/Halls", newHall);
       setShowAddForm(false);
       toast.success("Hall submitted for approval!");
-      setNewHall({ name: '', description: '', capacity: 0, pricePerDay: 0, state: '', city: '', fullAddress: '' });
+      setNewHall({ name: '', description: '', capacity: 0, pricePerDay: 0, state: '', city: '', fullAddress: '', latitude: 0, longitude: 0 });
       fetchData(); // Refresh list
     } catch (err: unknown) {
         if (err instanceof Error && 'response' in err) {
@@ -98,7 +98,11 @@ export default function OwnerDashboard() {
                 <input type="text" placeholder="State (e.g. Kerala)" className="w-1/2 p-2 border rounded" required value={newHall.state} onChange={e => setNewHall({...newHall, state: e.target.value})} />
                 <input type="text" placeholder="City" className="w-1/2 p-2 border rounded" required value={newHall.city} onChange={e => setNewHall({...newHall, city: e.target.value})} />
               </div>
-              <input type="text" placeholder="Full Address" className="w-full mb-4 p-2 border rounded" required value={newHall.fullAddress} onChange={e => setNewHall({...newHall, fullAddress: e.target.value})} />
+              <input type="text" placeholder="Full Address" className="w-full mb-3 p-2 border rounded" required value={newHall.fullAddress} onChange={e => setNewHall({...newHall, fullAddress: e.target.value})} />
+              <div className="flex gap-3 mb-4">
+                <input type="number" step="0.000001" placeholder="Latitude (e.g. 10.85)" className="w-1/2 p-2 border rounded" required value={newHall.latitude || ""} onChange={e => setNewHall({...newHall, latitude: parseFloat(e.target.value) || 0})} />
+                <input type="number" step="0.000001" placeholder="Longitude (e.g. 76.27)" className="w-1/2 p-2 border rounded" required value={newHall.longitude || ""} onChange={e => setNewHall({...newHall, longitude: parseFloat(e.target.value) || 0})} />
+              </div>
               <button type="submit" className="w-full bg-blue-600 text-white font-semibold px-4 py-2 rounded shadow hover:bg-blue-700 transition">Submit for Approval</button>
             </form>
           )}

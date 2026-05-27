@@ -9,6 +9,8 @@ public class CreateHallDto
     public string State { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string FullAddress { get; set; } = string.Empty;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
 }
 
 public class HallResponseDto
@@ -21,6 +23,8 @@ public class HallResponseDto
     public string State { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string FullAddress { get; set; } = string.Empty;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
     public bool IsApprovedByAdmin { get; set; }
