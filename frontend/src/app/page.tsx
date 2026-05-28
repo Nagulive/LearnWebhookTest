@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import apiClient from "../lib/apiClient";
 import toast from "react-hot-toast";
+import { loadScript } from "../lib/loadScript";
+import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 
 interface Hall {
   id: string;
@@ -12,6 +14,8 @@ interface Hall {
   city: string;
   state: string;
   ownerName: string;
+  latitude: number;
+  longitude: number;
 }
 
 export default function Home() {
@@ -27,6 +31,16 @@ export default function Home() {
 
   const [bookingModal, setBookingModal] = useState<Hall | null>(null);
   const [eventDate, setEventDate] = useState("");
+
+  const { isLoaded: isMapLoaded } = useLoadScript({
+      googleMapsApiKey: "mock_google_maps_api_key_replace_me_in_env",
+  });
+
+  const mapCenter = useMemo(() => {
+     if (latFilter && lngFilter) return { lat: parseFloat(latFilter), lng: parseFloat(lngFilter) };
+     if (halls.length > 0) return { lat: halls[0].latitude, lng: halls[0].longitude };
+     return { lat: 10.8505, lng: 76.2711 }; // Default to Kerala Center
+  }, [latFilter, lngFilter, halls]);
 
   const fetchHalls = async () => {
     setLoading(true);
@@ -54,16 +68,59 @@ export default function Home() {
 
   const handleBooking = async (e: React.FormEvent) => {
       e.preventDefault();
+
+      const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+      if (!res) {
+          toast.error("Razorpay SDK failed to load. Are you online?");
+          return;
+      }
+
       try {
-          await apiClient.post("/Bookings", {
+          // 1. Create order on our backend
+          const bookingResponse = await apiClient.post("/Bookings", {
               hallId: bookingModal?.id,
               eventType: 0, // Mocking "Marriage"
               eventDate: eventDate
           });
-          toast.success("Booking Successful!");
-          setBookingModal(null);
+
+          const bookingData = bookingResponse.data;
+
+          // 2. Setup Razorpay options
+          const options = {
+              key: "mock_key_id", // In real app, this would be env variable NEXT_PUBLIC_RAZORPAY_KEY
+              amount: bookingModal!.pricePerDay * 100,
+              currency: "INR",
+              name: "Hall Booking Platform",
+              description: `Booking for ${bookingModal!.name}`,
+              order_id: bookingData.paymentTransactionId,
+              handler: async function (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) {
+                  // 3. Verify payment signature on backend
+                  try {
+                      await apiClient.post(`/Bookings/${bookingData.id}/verify-payment`, {
+                          razorpayPaymentId: response.razorpay_payment_id,
+                          razorpayOrderId: response.razorpay_order_id,
+                          razorpaySignature: response.razorpay_signature
+                      });
+                      toast.success("Payment Verified & Booking Confirmed!");
+                      setBookingModal(null);
+                  } catch {
+                      toast.error("Payment Verification Failed.");
+                  }
+              },
+              prefill: {
+                  name: "Customer Name",
+                  email: "customer@example.com",
+                  contact: "9999999999"
+              },
+              theme: { color: "#2563eb" }
+          };
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const paymentObject = new (window as any).Razorpay(options);
+          paymentObject.open();
+
       } catch {
-          toast.error("Booking failed. Ensure you are logged in as a Customer.");
+          toast.error("Failed to initialize booking. Ensure you are logged in as a Customer.");
       }
   };
 
@@ -90,8 +147,31 @@ export default function Home() {
       </header>
 
       {/* Map View Placeholder */}
-      <div className="max-w-7xl mx-auto mb-12 h-64 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded-xl shadow-inner">
-         <p className="text-gray-500 text-lg font-medium">🗺️ Google Maps Integration Placeholder (Epic 2)</p>
+      <div className="max-w-7xl mx-auto mb-12 h-96 bg-gray-200 border border-gray-300 overflow-hidden flex items-center justify-center rounded-xl shadow-inner relative">
+         {!isMapLoaded ? (
+             <p className="text-gray-500 text-lg font-medium animate-pulse">Loading Map...</p>
+         ) : (
+             <>
+                 <div className="absolute top-0 left-0 w-full h-full bg-white bg-opacity-70 z-10 flex items-center justify-center backdrop-blur-sm">
+                     <p className="text-black text-xl font-bold bg-white p-4 rounded-xl shadow-xl">
+                         Map requires a valid Google Maps API Key to render tiles.<br/><span className="text-sm font-normal">Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment.</span>
+                     </p>
+                 </div>
+                 <GoogleMap
+                    zoom={latFilter ? 12 : 7}
+                    center={mapCenter}
+                    mapContainerClassName="w-full h-full"
+                 >
+                    {halls.map((hall) => (
+                        <Marker
+                            key={hall.id}
+                            position={{lat: hall.latitude, lng: hall.longitude}}
+                            label={hall.name}
+                        />
+                    ))}
+                 </GoogleMap>
+             </>
+         )}
       </div>
 
       {bookingModal && (
