@@ -12,9 +12,10 @@ interface Hall {
 
 export default function AdminDashboard() {
   const [unapprovedHalls, setUnapprovedHalls] = useState<Hall[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const fetchHalls = () => {
-    apiClient.get("/Halls/unapproved").then(res => setUnapprovedHalls(res.data));
+    return apiClient.get("/Halls/unapproved").then(res => setUnapprovedHalls(res.data));
   };
 
   useEffect(() => {
@@ -22,8 +23,13 @@ export default function AdminDashboard() {
   }, []);
 
   const approveHall = async (id: string) => {
-    await apiClient.put(`/Halls/${id}/approve`);
-    fetchHalls();
+    setApprovingId(id);
+    try {
+      await apiClient.put(`/Halls/${id}/approve`);
+      await fetchHalls();
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   return (
@@ -44,10 +50,12 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => approveHall(hall.id)}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Approve ${hall.name}`}
+                aria-busy={approvingId === hall.id}
+                disabled={approvingId === hall.id}
               >
-                Approve
+                {approvingId === hall.id ? "Approving..." : "Approve"}
               </button>
             </div>
           ))}
