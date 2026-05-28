@@ -35,8 +35,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Dependency Injection
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
-builder.Services.AddScoped<INotificationService, MockNotificationService>();
-// builder.Services.AddScoped<IPaymentService, RazorpayPaymentService>(); // To be implemented with real keys
+builder.Services.AddScoped<INotificationService, HallBooking.Infrastructure.Services.RealNotificationService>();
+builder.Services.AddScoped<IPaymentService, HallBooking.Infrastructure.Services.RazorpayPaymentService>();
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();

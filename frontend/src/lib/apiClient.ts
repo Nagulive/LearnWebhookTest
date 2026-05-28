@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Match docker port
+  baseURL: '/api', // Uses the Next.js rewrite proxy to reach the backend
   headers: {
     'Content-Type': 'application/json',
   },

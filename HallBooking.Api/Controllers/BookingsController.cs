@@ -16,11 +16,13 @@ public class BookingsController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
     private readonly INotificationService _notificationService;
+    private readonly IPaymentService _paymentService;
 
-    public BookingsController(IApplicationDbContext context, INotificationService notificationService)
+    public BookingsController(IApplicationDbContext context, INotificationService notificationService, IPaymentService paymentService)
     {
         _context = context;
         _notificationService = notificationService;
+        _paymentService = paymentService;
     }
 
     [Authorize(Roles = "Customer")]
@@ -48,15 +50,54 @@ public class BookingsController : ControllerBase
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync(default);
 
+        // Generate Razorpay Order
+        var orderId = await _paymentService.CreatePaymentOrderAsync(booking.TotalAmount, "INR", booking.Id.ToString());
+        booking.PaymentTransactionId = orderId;
+        await _context.SaveChangesAsync(default);
+
         // Notify Owner
-        await _notificationService.SendEmailAsync(hall.Owner.Email, "New Booking Request", $"You have a new booking request for {hall.Name} on {dto.EventDate}");
+        await _notificationService.SendSmsAsync(hall.Owner.PhoneNumber, $"New Booking ID {booking.Id} for {hall.Name} on {dto.EventDate.ToShortDateString()}");
 
         return Ok(new BookingResponseDto
         {
             Id = booking.Id,
             HallId = booking.HallId,
+            PaymentTransactionId = orderId,
             Status = booking.Status
         });
+    }
+
+    public class VerifyPaymentDto
+    {
+        public string RazorpayPaymentId { get; set; } = string.Empty;
+        public string RazorpayOrderId { get; set; } = string.Empty;
+        public string RazorpaySignature { get; set; } = string.Empty;
+    }
+
+    [Authorize(Roles = "Customer")]
+    [HttpPost("{id}/verify-payment")]
+    public async Task<IActionResult> VerifyPayment(Guid id, VerifyPaymentDto dto)
+    {
+        var booking = await _context.Bookings.FindAsync(id);
+        if (booking == null) return NotFound();
+
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || booking.CustomerId.ToString() != userIdString)
+            return Forbid();
+
+        if (booking.PaymentTransactionId != dto.RazorpayOrderId)
+            return BadRequest("Order ID mismatch.");
+
+        var isValid = await _paymentService.VerifyPaymentSignatureAsync(dto.RazorpayOrderId, dto.RazorpayPaymentId, dto.RazorpaySignature);
+
+        if (isValid)
+        {
+            booking.Status = BookingStatus.Confirmed;
+            await _context.SaveChangesAsync(default);
+            return Ok(new { message = "Payment verified successfully." });
+        }
+
+        return BadRequest("Payment verification failed.");
     }
 
     [HttpGet("my-bookings")]

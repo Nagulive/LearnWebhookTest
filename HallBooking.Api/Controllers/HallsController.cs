@@ -20,7 +20,7 @@ public class HallsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetHalls([FromQuery] string? state, [FromQuery] string? city)
+    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetHalls([FromQuery] string? state, [FromQuery] string? city, [FromQuery] double? lat, [FromQuery] double? lng, [FromQuery] double? radiusKm)
     {
         var query = _context.Halls
             .Include(h => h.Owner)
@@ -32,7 +32,7 @@ public class HallsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(city))
             query = query.Where(h => h.City.ToLower() == city.ToLower());
 
-        var halls = await query.Select(h => new HallResponseDto
+        var hallsList = await query.Select(h => new HallResponseDto
         {
             Id = h.Id,
             Name = h.Name,
@@ -42,10 +42,75 @@ public class HallsController : ControllerBase
             State = h.State,
             City = h.City,
             FullAddress = h.FullAddress,
+            Latitude = h.Latitude,
+            Longitude = h.Longitude,
             OwnerId = h.OwnerId,
             OwnerName = h.Owner.Name,
             IsApprovedByAdmin = h.IsApprovedByAdmin
         }).ToListAsync();
+
+        // If coordinates are provided, perform Haversine distance filtering in-memory
+        // (For production with millions of rows, use PostGIS directly in the DB query)
+        if (lat.HasValue && lng.HasValue && radiusKm.HasValue)
+        {
+            // Note: Since Latitude/Longitude weren't explicitly selected in the DTO previously,
+            // we should technically query the original entities and map after filtering.
+            // For simplicity in this iteration, we refetch the entities that match.
+
+            var allEntities = await query.ToListAsync();
+            var filteredIds = new List<Guid>();
+
+            foreach (var hall in allEntities)
+            {
+                var R = 6371; // Radius of earth in km
+                var dLat = (hall.Latitude - lat.Value) * (Math.PI / 180);
+                var dLon = (hall.Longitude - lng.Value) * (Math.PI / 180);
+                var a =
+                    Math.Sin(dLat/2) * Math.Sin(dLat/2) +
+                    Math.Cos(lat.Value * (Math.PI / 180)) * Math.Cos(hall.Latitude * (Math.PI / 180)) *
+                    Math.Sin(dLon/2) * Math.Sin(dLon/2);
+                var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1-a));
+                var distance = R * c;
+
+                if (distance <= radiusKm.Value)
+                {
+                    filteredIds.Add(hall.Id);
+                }
+            }
+
+            hallsList = hallsList.Where(h => filteredIds.Contains(h.Id)).ToList();
+        }
+
+        return Ok(hallsList);
+    }
+
+    [Authorize(Roles = "HallOwner")]
+    [HttpGet("my-halls")]
+    public async Task<ActionResult<IEnumerable<HallResponseDto>>> GetMyHalls()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || !Guid.TryParse(userIdString, out Guid ownerId))
+            return Unauthorized();
+
+        var halls = await _context.Halls
+            .Include(h => h.Owner)
+            .Where(h => h.OwnerId == ownerId)
+            .Select(h => new HallResponseDto
+            {
+                Id = h.Id,
+                Name = h.Name,
+                Description = h.Description,
+                Capacity = h.Capacity,
+                PricePerDay = h.PricePerDay,
+                State = h.State,
+                City = h.City,
+                FullAddress = h.FullAddress,
+                Latitude = h.Latitude,
+                Longitude = h.Longitude,
+                OwnerId = h.OwnerId,
+                OwnerName = h.Owner.Name,
+                IsApprovedByAdmin = h.IsApprovedByAdmin
+            }).ToListAsync();
 
         return Ok(halls);
     }
@@ -69,6 +134,8 @@ public class HallsController : ControllerBase
             State = hall.State,
             City = hall.City,
             FullAddress = hall.FullAddress,
+            Latitude = hall.Latitude,
+            Longitude = hall.Longitude,
             OwnerId = hall.OwnerId,
             OwnerName = hall.Owner.Name,
             IsApprovedByAdmin = hall.IsApprovedByAdmin
@@ -92,6 +159,8 @@ public class HallsController : ControllerBase
             State = dto.State,
             City = dto.City,
             FullAddress = dto.FullAddress,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
             OwnerId = ownerId,
             IsApprovedByAdmin = false // Requires Admin approval
         };
@@ -146,6 +215,8 @@ public class HallsController : ControllerBase
         hall.State = dto.State;
         hall.City = dto.City;
         hall.FullAddress = dto.FullAddress;
+        hall.Latitude = dto.Latitude;
+        hall.Longitude = dto.Longitude;
         hall.IsApprovedByAdmin = false; // Require re-approval after edits
 
         await _context.SaveChangesAsync(default);
