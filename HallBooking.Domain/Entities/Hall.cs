@@ -17,6 +17,9 @@ public class Hall
     public double Latitude { get; set; }
     public double Longitude { get; set; }
 
+    // Image
+    public string? ImageUrl { get; set; }
+
     // Ownership
     public Guid OwnerId { get; set; }
     public User Owner { get; set; } = null!;

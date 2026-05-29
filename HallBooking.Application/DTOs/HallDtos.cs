@@ -25,6 +25,7 @@ public class HallResponseDto
     public string FullAddress { get; set; } = string.Empty;
     public double Latitude { get; set; }
     public double Longitude { get; set; }
+    public string? ImageUrl { get; set; }
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
     public bool IsApprovedByAdmin { get; set; }

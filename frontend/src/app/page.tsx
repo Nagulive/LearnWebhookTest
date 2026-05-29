@@ -5,6 +5,8 @@ import apiClient from "../lib/apiClient";
 import toast from "react-hot-toast";
 import { loadScript } from "../lib/loadScript";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface Hall {
   id: string;
@@ -16,6 +18,7 @@ interface Hall {
   ownerName: string;
   latitude: number;
   longitude: number;
+  imageUrl?: string;
 }
 
 export default function Home() {
@@ -30,7 +33,8 @@ export default function Home() {
   const [radiusFilter, setRadiusFilter] = useState("10"); // Default 10km
 
   const [bookingModal, setBookingModal] = useState<Hall | null>(null);
-  const [eventDate, setEventDate] = useState("");
+  const [eventDate, setEventDate] = useState<Date | null>(null);
+  const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
   const { isLoaded: isMapLoaded } = useLoadScript({
       googleMapsApiKey: "mock_google_maps_api_key_replace_me_in_env",
@@ -66,8 +70,25 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleOpenBooking = async (hall: Hall) => {
+      setBookingModal(hall);
+      setEventDate(null);
+      try {
+          const res = await apiClient.get(`/Bookings/hall/${hall.id}`);
+          // Convert string dates to Date objects
+          setBookedDates(res.data.map((d: string) => new Date(d)));
+      } catch {
+          toast.error("Could not fetch available dates for this hall.");
+      }
+  };
+
   const handleBooking = async (e: React.FormEvent) => {
       e.preventDefault();
+
+      if (!eventDate) {
+          toast.error("Please select an event date.");
+          return;
+      }
 
       const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
       if (!res) {
@@ -80,7 +101,7 @@ export default function Home() {
           const bookingResponse = await apiClient.post("/Bookings", {
               hallId: bookingModal?.id,
               eventType: 0, // Mocking "Marriage"
-              eventDate: eventDate
+              eventDate: eventDate.toISOString()
           });
 
           const bookingData = bookingResponse.data;
@@ -185,14 +206,18 @@ export default function Home() {
                 </div>
 
                 <label className="block text-sm font-medium text-gray-700 mb-2">Select Event Date</label>
-                <input
-                  type="date"
-                  required
-                  min={new Date().toISOString().split('T')[0]} // Prevents booking past dates
-                  value={eventDate}
-                  onChange={e => setEventDate(e.target.value)}
-                  className="w-full border-2 border-gray-300 p-3 rounded-lg mb-8 focus:border-blue-500 focus:outline-none"
-                />
+                <div className="mb-8">
+                  <DatePicker
+                      selected={eventDate}
+                      onChange={(date: Date | null) => setEventDate(date)}
+                      excludeDates={bookedDates}
+                      minDate={new Date()}
+                      placeholderText="Click to select an available date"
+                      className="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-blue-500 focus:outline-none"
+                      required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Greyed out dates are already booked.</p>
+                </div>
 
                 <div className="flex gap-4">
                     <button type="button" onClick={() => setBookingModal(null)} className="flex-1 border-2 border-gray-300 text-gray-700 font-semibold p-3 rounded-lg hover:bg-gray-50 transition">Cancel</button>
@@ -216,8 +241,12 @@ export default function Home() {
           ) : (
             halls.map((hall) => (
               <div key={hall.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col">
-                <div className="h-48 bg-gray-200 flex items-center justify-center text-gray-400">
-                   <p>📷 Image Gallery (Epic 3)</p>
+                <div className="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                   {hall.imageUrl ? (
+                       <img src={hall.imageUrl} alt={hall.name} className="w-full h-full object-cover" />
+                   ) : (
+                       <p className="text-gray-400">📷 No Image Provided</p>
+                   )}
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <h2 className="text-2xl font-bold text-gray-900 mb-1">{hall.name}</h2>
@@ -225,7 +254,7 @@ export default function Home() {
                   <p className="text-gray-600 mb-6 flex-1 line-clamp-3">{hall.description}</p>
                   <div className="flex items-center justify-between mt-auto">
                     <p className="font-extrabold text-xl text-blue-700">₹{hall.pricePerDay} <span className="text-sm text-gray-500 font-normal">/ day</span></p>
-                    <button onClick={() => setBookingModal(hall)} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">
+                    <button onClick={() => handleOpenBooking(hall)} className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-sm">
                       Book Now
                     </button>
                   </div>

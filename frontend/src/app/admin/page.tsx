@@ -18,9 +18,17 @@ interface User {
   role: number;
 }
 
+interface Analytics {
+  totalUsers: number;
+  totalHalls: number;
+  totalBookings: number;
+  totalRevenue: number;
+}
+
 export default function AdminDashboard() {
   const [unapprovedHalls, setUnapprovedHalls] = useState<Hall[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   const fetchData = async () => {
     try {
@@ -29,6 +37,9 @@ export default function AdminDashboard() {
 
         const usersRes = await apiClient.get("/Users");
         setUsers(usersRes.data);
+
+        const analyticsRes = await apiClient.get("/Analytics");
+        setAnalytics(analyticsRes.data);
     } catch {
         toast.error("Failed to load admin data");
     }
@@ -57,6 +68,28 @@ export default function AdminDashboard() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+
+      {/* Analytics Overview */}
+      {analytics && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              <div className="bg-white border rounded-xl p-6 shadow-sm text-center">
+                  <p className="text-gray-500 text-sm font-semibold uppercase">Total Users</p>
+                  <p className="text-3xl font-bold text-blue-600">{analytics.totalUsers}</p>
+              </div>
+              <div className="bg-white border rounded-xl p-6 shadow-sm text-center">
+                  <p className="text-gray-500 text-sm font-semibold uppercase">Registered Halls</p>
+                  <p className="text-3xl font-bold text-green-600">{analytics.totalHalls}</p>
+              </div>
+              <div className="bg-white border rounded-xl p-6 shadow-sm text-center">
+                  <p className="text-gray-500 text-sm font-semibold uppercase">Total Bookings</p>
+                  <p className="text-3xl font-bold text-purple-600">{analytics.totalBookings}</p>
+              </div>
+              <div className="bg-white border rounded-xl p-6 shadow-sm text-center">
+                  <p className="text-gray-500 text-sm font-semibold uppercase">Total Revenue</p>
+                  <p className="text-3xl font-bold text-orange-600">₹{analytics.totalRevenue}</p>
+              </div>
+          </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>

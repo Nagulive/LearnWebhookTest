@@ -13,10 +13,12 @@ namespace HallBooking.Api.Controllers;
 public class HallsController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
+    private readonly IImageService _imageService;
 
-    public HallsController(IApplicationDbContext context)
+    public HallsController(IApplicationDbContext context, IImageService imageService)
     {
         _context = context;
+        _imageService = imageService;
     }
 
     [HttpGet]
@@ -44,6 +46,7 @@ public class HallsController : ControllerBase
             FullAddress = h.FullAddress,
             Latitude = h.Latitude,
             Longitude = h.Longitude,
+            ImageUrl = h.ImageUrl,
             OwnerId = h.OwnerId,
             OwnerName = h.Owner.Name,
             IsApprovedByAdmin = h.IsApprovedByAdmin
@@ -107,6 +110,7 @@ public class HallsController : ControllerBase
                 FullAddress = h.FullAddress,
                 Latitude = h.Latitude,
                 Longitude = h.Longitude,
+                ImageUrl = h.ImageUrl,
                 OwnerId = h.OwnerId,
                 OwnerName = h.Owner.Name,
                 IsApprovedByAdmin = h.IsApprovedByAdmin
@@ -136,6 +140,7 @@ public class HallsController : ControllerBase
             FullAddress = hall.FullAddress,
             Latitude = hall.Latitude,
             Longitude = hall.Longitude,
+            ImageUrl = hall.ImageUrl,
             OwnerId = hall.OwnerId,
             OwnerName = hall.Owner.Name,
             IsApprovedByAdmin = hall.IsApprovedByAdmin
@@ -244,6 +249,35 @@ public class HallsController : ControllerBase
         await _context.SaveChangesAsync(default);
 
         return NoContent();
+    }
+
+    [Authorize(Roles = "HallOwner")]
+    [HttpPost("{id}/image")]
+    public async Task<IActionResult> UploadHallImage(Guid id, IFormFile file)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdString == null || !Guid.TryParse(userIdString, out Guid ownerId))
+            return Unauthorized();
+
+        var hall = await _context.Halls.FindAsync(id);
+        if (hall == null) return NotFound();
+
+        if (hall.OwnerId != ownerId) return Forbid();
+
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded.");
+
+        try
+        {
+            var imageUrl = await _imageService.UploadImageAsync(file);
+            hall.ImageUrl = imageUrl;
+            await _context.SaveChangesAsync(default);
+            return Ok(new { ImageUrl = imageUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
 
     [Authorize(Roles = "Admin")]

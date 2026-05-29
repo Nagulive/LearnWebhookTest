@@ -37,6 +37,14 @@ public class BookingsController : ControllerBase
         if (hall == null) return NotFound("Hall not found.");
         if (!hall.IsApprovedByAdmin) return BadRequest("Hall is not approved for booking.");
 
+        // Prevent Double Booking
+        var isBooked = await _context.Bookings.AnyAsync(b =>
+            b.HallId == dto.HallId &&
+            b.EventDate.Date == dto.EventDate.Date &&
+            b.Status != BookingStatus.Cancelled);
+
+        if (isBooked) return BadRequest("This hall is already booked on the selected date.");
+
         var booking = new Booking
         {
             HallId = dto.HallId,
@@ -98,6 +106,18 @@ public class BookingsController : ControllerBase
         }
 
         return BadRequest("Payment verification failed.");
+    }
+
+    [HttpGet("hall/{hallId}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<DateTime>>> GetBookedDatesForHall(Guid hallId)
+    {
+        var bookedDates = await _context.Bookings
+            .Where(b => b.HallId == hallId && b.Status != BookingStatus.Cancelled)
+            .Select(b => b.EventDate.Date)
+            .ToListAsync();
+
+        return Ok(bookedDates);
     }
 
     [HttpGet("my-bookings")]

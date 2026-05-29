@@ -37,6 +37,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 builder.Services.AddScoped<INotificationService, HallBooking.Infrastructure.Services.RealNotificationService>();
 builder.Services.AddScoped<IPaymentService, HallBooking.Infrastructure.Services.RazorpayPaymentService>();
+builder.Services.AddScoped<IImageService, HallBooking.Infrastructure.Services.MockImageUploadService>();
 
 // Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterDtoValidator>();
